@@ -1,0 +1,623 @@
+{
+  "Asia": {
+    "China": [
+      "Shanghai",
+      "Beijing",
+      "Guangzhou",
+      "Shenzhen",
+      "Tianjin"
+    ],
+    "India": [
+      "Delhi",
+      "Mumbai",
+      "Kolkata",
+      "Chennai",
+      "Bangalore"
+    ],
+    "Indonesia": [
+      "Jakarta",
+      "Surabaya",
+      "Bandung",
+      "Medan",
+      "Semarang"
+    ],
+    "Pakistan": [
+      "Karachi",
+      "Lahore",
+      "Faisalabad",
+      "Rawalpindi",
+      "Multan"
+    ],
+    "Bangladesh": [
+      "Dhaka",
+      "Chittagong",
+      "Khulna",
+      "Rajshahi",
+      "Sylhet"
+    ],
+    "Japan": [
+      "Tokyo",
+      "Yokohama",
+      "Osaka",
+      "Nagoya",
+      "Sapporo"
+    ],
+    "Philippines": [
+      "Manila",
+      "Quezon City",
+      "Davao City",
+      "Caloocan",
+      "Cebu City"
+    ],
+    "Vietnam": [
+      "Ho Chi Minh City",
+      "Hanoi",
+      "Hai Phong",
+      "Da Nang",
+      "Can Tho"
+    ],
+    "Iran": [
+      "Tehran",
+      "Mashhad",
+      "Isfahan",
+      "Tabriz",
+      "Shiraz"
+    ],
+    "Thailand": [
+      "Bangkok",
+      "Nonthaburi",
+      "Nakhon Ratchasima",
+      "Chiang Mai",
+      "Hat Yai"
+    ],
+    "South Korea": [
+      "Seoul",
+      "Busan",
+      "Incheon",
+      "Daegu",
+      "Daejeon"
+    ],
+    "Turkey": [
+      "Istanbul",
+      "Ankara",
+      "Izmir",
+      "Bursa",
+      "Antalya"
+    ],
+    "Saudi Arabia": [
+      "Riyadh",
+      "Jeddah",
+      "Mecca",
+      "Medina",
+      "Dammam"
+    ],
+    "Malaysia": [
+      "Kuala Lumpur",
+      "George Town",
+      "Ipoh",
+      "Shah Alam",
+      "Johor Bahru"
+    ],
+    "Iraq": [
+      "Baghdad",
+      "Basra",
+      "Mosul",
+      "Erbil",
+      "Sulaymaniyah"
+    ],
+    "Afghanistan": [
+      "Kabul",
+      "Kandahar",
+      "Herat",
+      "Mazar-i-Sharif",
+      "Jalalabad"
+    ],
+    "Nepal": [
+      "Kathmandu",
+      "Pokhara",
+      "Lalitpur",
+      "Bharatpur",
+      "Biratnagar"
+    ],
+    "Sri Lanka": [
+      "Colombo",
+      "Dehiwala-Mount Lavinia",
+      "Moratuwa",
+      "Kandy",
+      "Jaffna"
+    ],
+    "Uzbekistan": [
+      "Tashkent",
+      "Namangan",
+      "Samarkand",
+      "Andijan",
+      "Bukhara"
+    ],
+    "Kazakhstan": [
+      "Almaty",
+      "Nur-Sultan",
+      "Shymkent",
+      "Aktobe",
+      "Karaganda"
+    ]
+  },
+  "Africa": {
+    "Nigeria": [
+      "Lagos",
+      "Kano",
+      "Ibadan",
+      "Kaduna",
+      "Port Harcourt"
+    ],
+    "Ethiopia": [
+      "Addis Ababa",
+      "Dire Dawa",
+      "Mekelle",
+      "Gondar",
+      "Bahir Dar"
+    ],
+    "Egypt": [
+      "Cairo",
+      "Alexandria",
+      "Giza",
+      "Shubra El Kheima",
+      "Port Said"
+    ],
+    "DR Congo": [
+      "Kinshasa",
+      "Lubumbashi",
+      "Mbuji-Mayi",
+      "Kananga",
+      "Kisangani"
+    ],
+    "South Africa": [
+      "Johannesburg",
+      "Cape Town",
+      "Durban",
+      "Pretoria",
+      "Port Elizabeth"
+    ],
+    "Tanzania": [
+      "Dar es Salaam",
+      "Mwanza",
+      "Arusha",
+      "Dodoma",
+      "Mbeya"
+    ],
+    "Kenya": [
+      "Nairobi",
+      "Mombasa",
+      "Kisumu",
+      "Nakuru",
+      "Eldoret"
+    ],
+    "Algeria": [
+      "Algiers",
+      "Oran",
+      "Constantine",
+      "Annaba",
+      "Batna"
+    ],
+    "Morocco": [
+      "Casablanca",
+      "Fez",
+      "Tangier",
+      "Marrakech",
+      "Agadir"
+    ],
+    "Ghana": [
+      "Accra",
+      "Kumasi",
+      "Tamale",
+      "Sekondi-Takoradi",
+      "Ashaiman"
+    ],
+    "Sudan": [
+      "Khartoum",
+      "Omdurman",
+      "Nyala",
+      "Port Sudan",
+      "Kassala"
+    ],
+    "Uganda": [
+      "Kampala",
+      "Gulu",
+      "Lira",
+      "Jinja",
+      "Mbarara"
+    ],
+    "Mozambique": [
+      "Maputo",
+      "Matola",
+      "Beira",
+      "Nampula",
+      "Chimoio"
+    ],
+    "Cameroon": [
+      "Douala",
+      "Yaoundé",
+      "Garoua",
+      "Bamenda",
+      "Maroua"
+    ],
+    "Angola": [
+      "Luanda",
+      "N'dalatando",
+      "Huambo",
+      "Lobito",
+      "Benguela"
+    ],
+    "Ivory Coast": [
+      "Abidjan",
+      "Bouaké",
+      "Daloa",
+      "San-Pédro",
+      "Korhogo"
+    ],
+    "Senegal": [
+      "Dakar",
+      "Touba",
+      "Thiès",
+      "Rufisque",
+      "Kaolack"
+    ],
+    "Zimbabwe": [
+      "Harare",
+      "Bulawayo",
+      "Chitungwiza",
+      "Mutare",
+      "Epworth"
+    ],
+    "Zambia": [
+      "Lusaka",
+      "Kitwe",
+      "Ndola",
+      "Kabwe",
+      "Chingola"
+    ],
+    "Mali": [
+      "Bamako",
+      "Sikasso",
+      "Mopti",
+      "Koutiala",
+      "Ségou"
+    ]
+  },
+  "North America": {
+    "United States": [
+      "New York City",
+      "Los Angeles",
+      "Chicago",
+      "Houston",
+      "Phoenix"
+    ],
+    "Mexico": [
+      "Mexico City",
+      "Guadalajara",
+      "Monterrey",
+      "Puebla",
+      "Tijuana"
+    ],
+    "Canada": [
+      "Toronto",
+      "Montreal",
+      "Vancouver",
+      "Calgary",
+      "Edmonton"
+    ],
+    "Guatemala": [
+      "Guatemala City",
+      "Mixco",
+      "Villa Nueva",
+      "Quetzaltenango",
+      "San Miguel Petapa"
+    ],
+    "Honduras": [
+      "Tegucigalpa",
+      "San Pedro Sula",
+      "Choloma",
+      "La Ceiba",
+      "El Progreso"
+    ],
+    "Cuba": [
+      "Havana",
+      "Santiago de Cuba",
+      "Camagüey",
+      "Holguín",
+      "Santa Clara"
+    ],
+    "Dominican Republic": [
+      "Santo Domingo",
+      "Santiago",
+      "La Romana",
+      "San Pedro de Macorís",
+      "San Francisco de Macorís"
+    ],
+    "Haiti": [
+      "Port-au-Prince",
+      "Carrefour",
+      "Delmas",
+      "Cap-Haïtien",
+      "Gonaïves"
+    ],
+    "El Salvador": [
+      "San Salvador",
+      "Soyapango",
+      "Santa Ana",
+      "San Miguel",
+      "Mejicanos"
+    ],
+    "Nicaragua": [
+      "Managua",
+      "León",
+      "Masaya",
+      "Chinandega",
+      "Matagalpa"
+    ],
+    "Panama": [
+      "Panama City",
+      "San Miguelito",
+      "Tocumen",
+      "David",
+      "Arraiján"
+    ],
+    "Costa Rica": [
+      "San José",
+      "Alajuela",
+      "Cartago",
+      "Heredia",
+      "Liberia"
+    ]
+  },
+  "South America": {
+    "Brazil": [
+      "São Paulo",
+      "Rio de Janeiro",
+      "Brasília",
+      "Salvador",
+      "Fortaleza"
+    ],
+    "Argentina": [
+      "Buenos Aires",
+      "Córdoba",
+      "Rosario",
+      "Mendoza",
+      "La Plata"
+    ],
+    "Colombia": [
+      "Bogotá",
+      "Medellín",
+      "Cali",
+      "Barranquilla",
+      "Cartagena"
+    ],
+    "Peru": [
+      "Lima",
+      "Arequipa",
+      "Trujillo",
+      "Chiclayo",
+      "Piura"
+    ],
+    "Venezuela": [
+      "Caracas",
+      "Maracaibo",
+      "Valencia",
+      "Barquisimeto",
+      "Maracay"
+    ],
+    "Chile": [
+      "Santiago",
+      "Valparaíso",
+      "Concepción",
+      "La Serena",
+      "Antofagasta"
+    ],
+    "Ecuador": [
+      "Guayaquil",
+      "Quito",
+      "Cuenca",
+      "Santo Domingo",
+      "Machala"
+    ],
+    "Bolivia": [
+      "Santa Cruz de la Sierra",
+      "El Alto",
+      "La Paz",
+      "Cochabamba",
+      "Oruro"
+    ],
+    "Paraguay": [
+      "Asunción",
+      "Ciudad del Este",
+      "San Lorenzo",
+      "Luque",
+      "Capiatá"
+    ],
+    "Uruguay": [
+      "Montevideo",
+      "Salto",
+      "Ciudad de la Costa",
+      "Paysandú",
+      "Las Piedras"
+    ]
+  },
+  "Europe": {
+    "Russia": [
+      "Moscow",
+      "Saint Petersburg",
+      "Novosibirsk",
+      "Yekaterinburg",
+      "Kazan"
+    ],
+    "Germany": [
+      "Berlin",
+      "Hamburg",
+      "Munich",
+      "Cologne",
+      "Frankfurt"
+    ],
+    "United Kingdom": [
+      "London",
+      "Birmingham",
+      "Manchester",
+      "Leeds",
+      "Liverpool"
+    ],
+    "France": [
+      "Paris",
+      "Marseille",
+      "Lyon",
+      "Toulouse",
+      "Nice"
+    ],
+    "Italy": [
+      "Rome",
+      "Milan",
+      "Naples",
+      "Turin",
+      "Palermo"
+    ],
+    "Spain": [
+      "Madrid",
+      "Barcelona",
+      "Valencia",
+      "Seville",
+      "Zaragoza"
+    ],
+    "Ukraine": [
+      "Kyiv",
+      "Kharkiv",
+      "Odesa",
+      "Dnipro",
+      "Donetsk"
+    ],
+    "Poland": [
+      "Warsaw",
+      "Kraków",
+      "Łódź",
+      "Wrocław",
+      "Poznań"
+    ],
+    "Romania": [
+      "Bucharest",
+      "Cluj-Napoca",
+      "Timișoara",
+      "Iași",
+      "Constanța"
+    ],
+    "Netherlands": [
+      "Amsterdam",
+      "Rotterdam",
+      "The Hague",
+      "Utrecht",
+      "Eindhoven"
+    ],
+    "Belgium": [
+      "Brussels",
+      "Antwerp",
+      "Ghent",
+      "Charleroi",
+      "Liège"
+    ],
+    "Greece": [
+      "Athens",
+      "Thessaloniki",
+      "Patras",
+      "Piraeus",
+      "Larissa"
+    ],
+    "Portugal": [
+      "Lisbon",
+      "Porto",
+      "Vila Nova de Gaia",
+      "Amadora",
+      "Braga"
+    ],
+    "Czech Republic": [
+      "Prague",
+      "Brno",
+      "Ostrava",
+      "Plzen",
+      "Liberec"
+    ],
+    "Sweden": [
+      "Stockholm",
+      "Gothenburg",
+      "Malmö",
+      "Uppsala",
+      "Västerås"
+    ],
+    "Hungary": [
+      "Budapest",
+      "Debrecen",
+      "Szeged",
+      "Miskolc",
+      "Pécs"
+    ],
+    "Austria": [
+      "Vienna",
+      "Graz",
+      "Linz",
+      "Salzburg",
+      "Innsbruck"
+    ],
+    "Switzerland": [
+      "Zurich",
+      "Geneva",
+      "Basel",
+      "Bern",
+      "Lausanne"
+    ],
+    "Serbia": [
+      "Belgrade",
+      "Novi Sad",
+      "Niš",
+      "Kragujevac",
+      "Subotica"
+    ]
+  },
+  "Oceania": {
+    "Australia": [
+      "Sydney",
+      "Melbourne",
+      "Brisbane",
+      "Perth",
+      "Adelaide"
+    ],
+    "New Zealand": [
+      "Auckland",
+      "Wellington",
+      "Christchurch",
+      "Hamilton",
+      "Tauranga"
+    ],
+    "Papua New Guinea": [
+      "Port Moresby",
+      "Lae",
+      "Arawa",
+      "Mount Hagen",
+      "Madang"
+    ],
+    "Fiji": [
+      "Suva",
+      "Lautoka",
+      "Nadi",
+      "Labasa",
+      "Ba"
+    ],
+    "Solomon Islands": [
+      "Honiara",
+      "Auki",
+      "Gizo",
+      "Kirakira",
+      "Buala"
+    ],
+    "Vanuatu": [
+      "Port Vila",
+      "Luganville",
+      "Norsup",
+      "Isangel",
+      "Lakatoro"
+    ]
+  }
+}
