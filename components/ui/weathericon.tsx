@@ -3,7 +3,11 @@ import {
   SunLight,
   Cloud,
   Rain,
+  HeavyRain,
   Snow,
+  SnowFlake,
+  Fog,
+  Thunderstorm,
   Wind,
   Droplet,
   MapPin,
@@ -27,36 +31,26 @@ import {
 
 // Weather-specific icon component using Iconoir
 export const WeatherIcon: React.FC<{ condition: string; size?: string; className?: string }> = ({ condition, size = '2rem', className = '' }) => {
-  const getIconName = (condition: string) => {
-    const cond = condition.toLowerCase();
-    if (cond.includes('clear')) return 'sun';
-    if (cond.includes('cloud')) return 'cloud';
-    if (cond.includes('rain')) return 'cloud-rain';
-    if (cond.includes('snow')) return 'cloud-snow';
-    if (cond.includes('drizzle')) return 'cloud-drizzle';
-    if (cond.includes('thunder')) return 'cloud-lightning';
-    if (cond.includes('fog') || cond.includes('mist')) return 'cloud';
-    if (cond.includes('haze')) return 'cloud';
-    return 'sun';
-  };
-  
+  // Map your new icon names to the correct icon components
   const icons: Record<string, React.ElementType> = {
-    'sun': SunLight,
+    'sun-light': SunLight,
+    'cloud-sunny': Cloud,
     'cloud': Cloud,
-    'cloud-rain': Rain,
-    'cloud-snow': Snow,
-    'cloud-drizzle': Cloud,
-    'cloud-lightning': Cloud,
+    'rain': Rain,
+    'heavy-rain': HeavyRain,
+    'snow': Snow,
+    'snow-flake': SnowFlake,
+    'fog': Fog,
+    'thunderstorm': Thunderstorm,
+    'wind': Wind,
+    // fallback
+    'default': Cloud,
   };
-  
-  const Icon = icons[getIconName(condition)] || SunLight;
-  return <Icon width={size} height={size} className={className} />;
-};
 
-// Common weather-related icons using Iconoir
-export const SearchIcon: React.FC<{ className?: string; color?: string }> = ({ className = '', color }) => (
-  <Search width="1.25rem" height="1.25rem" className={className} color={color} />
-);
+  const iconKey = condition in icons ? condition : 'default';
+  const IconComponent = icons[iconKey];
+  return <IconComponent width={size} height={size} className={className} />;
+};
 
 export const LocationIcon: React.FC<{ className?: string; color?: string }> = ({ className = '', color }) => (
   <MapPin width="1.25rem" height="1.25rem" className={className} color={color} />
@@ -166,4 +160,8 @@ export const getPollutantIcon = (pollutant: string) => {
     default:
       return Shield;
   }
-}; 
+};
+
+export const SearchIcon: React.FC<{ className?: string; color?: string }> = ({ className = '', color }) => (
+  <Search width="1.25rem" height="1.25rem" className={className} color={color} />
+); 

@@ -3,6 +3,11 @@ import axios from 'axios';
 import { cityInfoQuerySchema } from '@/lib/validation';
 import { cityInfoRateLimiter } from '@/lib/rate-limiter';
 
+function trimSummary(summary: string, maxWords = 60): string {
+  const words = summary.trim().replace(/\s+/g, ' ').split(' ');
+  return words.length > maxWords ? words.slice(0, maxWords).join(' ') + '...' : summary;
+}
+
 export async function GET(req: NextRequest) {
   // Check rate limit
   const rateLimitResult = await cityInfoRateLimiter.check(req, {
@@ -64,7 +69,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           title: data.title,
           description: data.description,
-          summary: data.extract,
+          summary: trimSummary(data.extract),
           thumbnail: data.thumbnail?.source || null,
           coordinates: data.coordinates || null,
           wikipedia_url: data.content_urls?.desktop?.page || null,
@@ -97,7 +102,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           title: data.title,
           description: data.description,
-          summary: data.extract,
+          summary: trimSummary(data.extract),
           thumbnail: data.thumbnail?.source || null,
           coordinates: data.coordinates || null,
           wikipedia_url: data.content_urls?.desktop?.page || null,
@@ -171,7 +176,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           title: countryWikiData.title,
           description: countryWikiData.description,
-          summary: countryWikiData.extract,
+          summary: trimSummary(countryWikiData.extract),
           thumbnail: countryWikiData.thumbnail?.source || null,
           coordinates: countryWikiData.coordinates || null,
           wikipedia_url: countryWikiData.content_urls?.desktop?.page || null,
