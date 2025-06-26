@@ -50,6 +50,13 @@ export const env = cleanEnv(process.env, {
         example: 'AbCdEfGhIjKlMnOpQrStUvWxYz123456',
     }),
 
+    // Open-Meteo configuration (no API key required)
+    ENABLE_OPENMETEO: str({
+        choices: ['true', 'false'],
+        default: 'true',
+        desc: 'Enable Open-Meteo API (free, no API key required)',
+    }),
+
     // Node environment
     NODE_ENV: str({
         choices: ['development', 'test', 'production'],
@@ -63,6 +70,7 @@ export const {
     OPENWEATHERMAP_API_KEY,
     IQAIR_API_KEY,
     ACCUWEATHER_API_KEY,
+    ENABLE_OPENMETEO,
     NODE_ENV,
 } = env;
 
@@ -71,12 +79,14 @@ export function validateApiConfiguration(): {
     openweathermap: boolean;
     iqair: boolean;
     accuweather: boolean;
+    openmeteo: boolean;
     allRequired: boolean;
 } {
     return {
         openweathermap: !!OPENWEATHERMAP_API_KEY,
         iqair: !!IQAIR_API_KEY,
         accuweather: !!ACCUWEATHER_API_KEY,
+        openmeteo: ENABLE_OPENMETEO === 'true',
         allRequired: !!(OPENWEATHERMAP_API_KEY && IQAIR_API_KEY),
     };
 }
@@ -102,6 +112,12 @@ export function getApiStatus(): string[] {
         messages.push('⚠️  AccuWeather API key is not configured (optional)');
     } else {
         messages.push('✅ AccuWeather API key is configured');
+    }
+
+    if (status.openmeteo) {
+        messages.push('✅ Open-Meteo API is enabled (free, no API key required)');
+    } else {
+        messages.push('❌ Open-Meteo API is disabled');
     }
 
     return messages;

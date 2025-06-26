@@ -39,25 +39,49 @@ export function WeatherHeroSkeleton() {
   )
 }
 
-// 5-Day Forecast skeleton
-export function ForecastSkeleton() {
+// Forecast skeleton with variable days
+export function ForecastSkeleton({ days = 5 }: { days?: number }) {
   return (
-    <div className="w-full md:w-[420px] bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-4 flex flex-col items-center justify-start mt-8 md:mt-0">
+    <div className={`${days === 5 ? 'w-full md:w-[420px]' : 'w-full md:w-[520px]'} bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-4 flex flex-col items-center justify-start mt-8 md:mt-0`}>
+      {/* Forecast Tabs Skeleton */}
+      <div className="flex items-center justify-center mb-4 w-full">
+        <div className="flex gap-1">
+          {[5, 10, 15].map((dayCount) => (
+            <Skeleton key={dayCount} className="h-10 w-20 rounded-lg" />
+          ))}
+        </div>
+      </div>
+      
       <Skeleton className="h-6 w-32 mb-4" />
       <div className="flex flex-col gap-2 w-full">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="flex items-center justify-between px-4 py-2 rounded-lg border bg-white/10 border-white/20 w-full min-h-[48px] max-h-[56px]">
-            <div className="flex items-center gap-4 w-full">
-              <Skeleton className="h-5 w-12" />
-              <div className="flex-1 flex items-center gap-2">
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-4 w-20 ml-2" />
+        {days === 5 ? (
+          // Detailed layout skeleton for 5 days
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex items-center justify-between px-4 py-2 rounded-lg border bg-white/10 border-white/20 w-full min-h-[48px] max-h-[56px]">
+              <div className="flex items-center gap-4 w-full">
+                <Skeleton className="h-5 w-12" />
+                <div className="flex-1 flex items-center gap-2">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-20 ml-2" />
+                </div>
+                <Skeleton className="h-6 w-6 rounded-full ml-2" />
               </div>
-              <Skeleton className="h-6 w-6 rounded-full ml-2" />
             </div>
+          ))
+        ) : (
+          // Compact grid layout skeleton for 10 and 14 days
+          <div className="grid grid-cols-5 gap-2">
+            {Array.from({ length: days }).map((_, index) => (
+              <div key={index} className="flex flex-col items-center p-2 rounded-lg border bg-white/10 border-white/20 min-h-[80px]">
+                <Skeleton className="h-3 w-8 mb-1" />
+                <Skeleton className="h-5 w-5 mb-1" />
+                <Skeleton className="h-4 w-10 mb-1" />
+                <Skeleton className="h-3 w-8" />
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   )

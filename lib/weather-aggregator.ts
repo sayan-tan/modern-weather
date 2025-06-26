@@ -1,6 +1,7 @@
 import { accuWeatherAPI, WeatherData } from './accuweather-api';
 import { getWeatherByCity, get5DayForecastByCity, OWMWeather, OWMForecast } from './openweathermap-api';
-import { UnifiedWeatherData, Unified5DayForecast, UnifiedHourlyForecast } from './types';
+import { UnifiedWeatherData, UnifiedDailyForecastArray, UnifiedHourlyForecast } from './types';
+import { getDailyForecastByCity, getHourlyForecastByCity, getWeatherCondition, OpenMeteoWeatherResponse } from './openmeteo-api';
 
 // Enhanced type definitions for better type safety
 interface WeatherSource {
@@ -203,21 +204,93 @@ function normalizeAccuForecast(accuData: WeatherData): ForecastSource[] {
   }));
 }
 
+// Normalize Open-Meteo daily forecast data
+function normalizeOpenMeteoDaily(openMeteoData: OpenMeteoWeatherResponse): ForecastSource[] {
+  if (!openMeteoData.daily) return [];
+  const d = openMeteoData.daily;
+  const result: ForecastSource[] = [];
+  for (let i = 0; i < d.time.length; i++) {
+    const weatherCode = d.weather_code[i];
+    const weatherInfo = getWeatherCondition(weatherCode);
+    result.push({
+      date: d.time[i],
+      day: new Date(d.time[i]).toLocaleDateString('en-US', { weekday: 'short' }),
+      high: Math.round(d.temperature_2m_max[i]),
+      low: Math.round(d.temperature_2m_min[i]),
+      condition: weatherInfo.condition,
+      description: weatherInfo.description,
+      humidity: undefined, // Not provided in daily
+      windSpeed: d.wind_speed_10m_max ? Math.round(d.wind_speed_10m_max[i]) : undefined,
+      feelsLike: d.apparent_temperature_max ? Math.round(d.apparent_temperature_max[i]) : undefined,
+      precipitation: d.precipitation_sum ? Math.round(d.precipitation_sum[i] * 100) / 100 : undefined,
+      source: 'openmeteo',
+      raw: Object.fromEntries(Object.entries(d).map(([k, v]) => [k, Array.isArray(v) ? v[i] : v])),
+    });
+  }
+  return result;
+}
+
+// Normalize Open-Meteo hourly forecast data
+function normalizeOpenMeteoHourly(openMeteoData: OpenMeteoWeatherResponse): HourlySource[] {
+  if (!openMeteoData.hourly) return [];
+  const h = openMeteoData.hourly;
+  const result: HourlySource[] = [];
+  for (let i = 0; i < h.time.length; i++) {
+    const weatherCode = h.weather_code ? h.weather_code[i] : undefined;
+    const weatherInfo = weatherCode !== undefined ? getWeatherCondition(weatherCode) : { condition: 'Unknown', description: '' };
+    result.push({
+      time: h.time[i],
+      temp: Math.round(h.temperature_2m[i]),
+      humidity: h.relative_humidity_2m ? h.relative_humidity_2m[i] : undefined,
+      windSpeed: h.wind_speed_10m ? Math.round(h.wind_speed_10m[i]) : undefined,
+      condition: weatherInfo.condition,
+      source: 'openmeteo',
+      raw: Object.fromEntries(Object.entries(h).map(([k, v]) => [k, Array.isArray(v) ? v[i] : v])),
+    });
+  }
+  return result;
+}
+
 // Main unified weather data function
 export async function getUnifiedWeatherData(city: string): Promise<UnifiedWeatherData> {
-  const [accuResult, owmResult] = await Promise.allSettled([
-    safeApiCall(() => accuWeatherAPI.getWeatherData(city), 'AccuWeather'),
+  // Try OWM and Open-Meteo in parallel
+  const [owmResult, openMeteoResult] = await Promise.allSettled([
     safeApiCall(() => getWeatherByCity(city), 'OpenWeatherMap'),
+    safeApiCall(() => import('./openmeteo-api').then(m => m.getCurrentWeatherByCity(city)), 'OpenMeteo'),
   ]);
 
   const sources: WeatherSource[] = [];
 
-  if (accuResult.status === 'fulfilled' && accuResult.value) {
-    sources.push(normalizeAccuWeather(accuResult.value));
-  }
-
   if (owmResult.status === 'fulfilled' && owmResult.value) {
     sources.push(normalizeOWMWeather(owmResult.value));
+  }
+
+  // OpenMeteo current weather normalization
+  if (openMeteoResult.status === 'fulfilled' && openMeteoResult.value) {
+    // Use convertToUnifiedWeatherData from openmeteo-api
+    try {
+      const { convertToUnifiedWeatherData } = await import('./openmeteo-api');
+      const openMeteoUnified = convertToUnifiedWeatherData(openMeteoResult.value);
+      sources.push({
+        temperature: openMeteoUnified.temperature,
+        humidity: openMeteoUnified.humidity,
+        windSpeed: openMeteoUnified.windSpeed,
+        condition: openMeteoUnified.condition,
+        source: 'openmeteo',
+        timestamp: Date.now(),
+        raw: openMeteoUnified.sourceBreakdown.openmeteo,
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  // If neither OWM nor OpenMeteo provided data, fallback to AccuWeather
+  if (sources.length === 0) {
+    const accuResult = await safeApiCall(() => accuWeatherAPI.getWeatherData(city), 'AccuWeather');
+    if (accuResult) {
+      sources.push(normalizeAccuWeather(accuResult));
+    }
   }
 
   if (sources.length === 0) {
@@ -240,20 +313,29 @@ export async function getUnifiedWeatherData(city: string): Promise<UnifiedWeathe
 }
 
 // Main unified 5-day forecast function
-export async function getUnified5DayForecast(city: string): Promise<Unified5DayForecast> {
-  const [accuResult, owmResult] = await Promise.allSettled([
-    safeApiCall(() => accuWeatherAPI.getWeatherData(city), 'AccuWeather'),
+export async function getUnified5DayForecast(city: string, days: number = 5): Promise<UnifiedDailyForecastArray> {
+  // Try OWM and Open-Meteo in parallel
+  const [owmResult, openMeteoResult] = await Promise.allSettled([
     safeApiCall(() => get5DayForecastByCity(city), 'OpenWeatherMap'),
+    safeApiCall(() => getDailyForecastByCity(city, days), 'OpenMeteo'),
   ]);
 
   const sources: ForecastSource[] = [];
 
-  if (accuResult.status === 'fulfilled' && accuResult.value) {
-    sources.push(...normalizeAccuForecast(accuResult.value));
-  }
-
   if (owmResult.status === 'fulfilled' && owmResult.value) {
     sources.push(...normalizeOWMForecast(owmResult.value));
+  }
+
+  if (openMeteoResult.status === 'fulfilled' && openMeteoResult.value) {
+    sources.push(...normalizeOpenMeteoDaily(openMeteoResult.value));
+  }
+
+  // If neither OWM nor OpenMeteo provided data, fallback to AccuWeather
+  if (sources.length === 0) {
+    const accuResult = await safeApiCall(() => accuWeatherAPI.getWeatherData(city), 'AccuWeather');
+    if (accuResult) {
+      sources.push(...normalizeAccuForecast(accuResult));
+    }
   }
 
   if (sources.length === 0) {
@@ -267,7 +349,7 @@ export async function getUnified5DayForecast(city: string): Promise<Unified5DayF
     dateGroups[source.date].push(source);
   });
 
-  const result: Unified5DayForecast = Object.entries(dateGroups).map(([date, dateSources]) => {
+  const result: UnifiedDailyForecastArray = Object.entries(dateGroups).map(([date, dateSources]) => {
     if (dateSources.length === 1) {
       const source = dateSources[0];
       return {
@@ -316,39 +398,14 @@ export async function getUnified5DayForecast(city: string): Promise<Unified5DayF
 }
 
 // Main unified hourly forecast function
-export async function getUnifiedHourlyForecast(city: string): Promise<UnifiedHourlyForecast> {
-  // Get AccuWeather location key
-  let locationKey: string | null = null;
-  try {
-    const locations = await accuWeatherAPI.searchLocation(city);
-    if (locations.length > 0) {
-      locationKey = locations[0].Key;
-    }
-  } catch (error) {
-    console.warn('Failed to get AccuWeather location key:', error);
-  }
-
-  const [accuResult, owmResult] = await Promise.allSettled([
-    safeApiCall(() => locationKey ? accuWeatherAPI.getHourlyForecast(locationKey!) : Promise.resolve([]), 'AccuWeather'),
+export async function getUnifiedHourlyForecast(city: string, days: number = 2): Promise<UnifiedHourlyForecast> {
+  // Try OWM and Open-Meteo in parallel
+  const [owmResult, openMeteoResult] = await Promise.allSettled([
     safeApiCall(() => get5DayForecastByCity(city), 'OpenWeatherMap'),
+    safeApiCall(() => getHourlyForecastByCity(city, days), 'OpenMeteo'),
   ]);
 
   const sources: HourlySource[] = [];
-
-  // Process AccuWeather hourly data
-  if (accuResult.status === 'fulfilled' && accuResult.value && Array.isArray(accuResult.value)) {
-    accuResult.value.forEach(hour => {
-      sources.push({
-        time: hour.DateTime,
-        temp: Math.round(hour.Temperature.Value),
-        humidity: hour.RelativeHumidity,
-        windSpeed: hour.Wind?.Speed?.Value ? Math.round(hour.Wind.Speed.Value * 1.60934) : undefined, // Convert mph to km/h
-        condition: normalizeCondition(hour.IconPhrase),
-        source: 'accuweather',
-        raw: hour,
-      });
-    });
-  }
 
   // Process OpenWeatherMap hourly data
   if (owmResult.status === 'fulfilled' && owmResult.value && Array.isArray(owmResult.value.list)) {
@@ -363,6 +420,38 @@ export async function getUnifiedHourlyForecast(city: string): Promise<UnifiedHou
         raw: item,
       });
     });
+  }
+
+  // Process Open-Meteo hourly data
+  if (openMeteoResult.status === 'fulfilled' && openMeteoResult.value) {
+    sources.push(...normalizeOpenMeteoHourly(openMeteoResult.value));
+  }
+
+  // If neither OWM nor OpenMeteo provided data, fallback to AccuWeather
+  if (sources.length === 0) {
+    let locationKey: string | null = null;
+    try {
+      const locations = await accuWeatherAPI.searchLocation(city);
+      if (locations.length > 0) {
+        locationKey = locations[0].Key;
+      }
+    } catch (error) {
+      console.warn('Failed to get AccuWeather location key:', error);
+    }
+    const accuResult = await safeApiCall(() => locationKey ? accuWeatherAPI.getHourlyForecast(locationKey!) : Promise.resolve([]), 'AccuWeather');
+    if (accuResult && Array.isArray(accuResult)) {
+      accuResult.forEach(hour => {
+        sources.push({
+          time: hour.DateTime,
+          temp: Math.round(hour.Temperature.Value),
+          humidity: hour.RelativeHumidity,
+          windSpeed: hour.Wind?.Speed?.Value ? Math.round(hour.Wind.Speed.Value * 1.60934) : undefined, // Convert mph to km/h
+          condition: normalizeCondition(hour.IconPhrase),
+          source: 'accuweather',
+          raw: hour,
+        });
+      });
+    }
   }
 
   if (sources.length === 0) {

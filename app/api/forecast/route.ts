@@ -47,9 +47,18 @@ export async function GET(request: NextRequest) {
   }
 
   const { city } = validationResult.data;
+  const days = parseInt(searchParams.get('days') || '5');
+
+  // Validate days parameter
+  if (days < 1 || days > 16) {
+    return NextResponse.json(
+      { error: 'Days parameter must be between 1 and 16' },
+      { status: 400 }
+    );
+  }
 
   try {
-    const forecastData = await getUnified5DayForecast(city);
+    const forecastData = await getUnified5DayForecast(city, days);
     return NextResponse.json(forecastData, {
       headers: {
         'X-RateLimit-Limit': rateLimitResult.limit.toString(),
