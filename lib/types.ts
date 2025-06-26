@@ -22,7 +22,7 @@ export interface UnifiedDailyForecast {
   sourceBreakdown: Record<string, unknown>;
 }
 
-export type Unified5DayForecast = UnifiedDailyForecast[];
+export type UnifiedDailyForecastArray = UnifiedDailyForecast[];
 
 export interface UnifiedHourlyForecastItem {
   time: string; // ISO string or display time

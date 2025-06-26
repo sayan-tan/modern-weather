@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { Input } from "@/components/ui/input"
-import { UnifiedWeatherData, Unified5DayForecast, UnifiedHourlyForecast, UnifiedHourlyForecastItem } from "@/lib/types"
+import { UnifiedWeatherData, UnifiedDailyForecastArray, UnifiedHourlyForecast, UnifiedHourlyForecastItem } from "@/lib/types"
 import { 
   getAirQualityColor,
   getAirQualityDescription,
@@ -33,7 +33,7 @@ export default function WeatherDashboard() {
   const [isClient, setIsClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState("")
   const [unifiedWeather, setUnifiedWeather] = useState<UnifiedWeatherData | null>(null)
-  const [unified5Day, setUnified5Day] = useState<Unified5DayForecast>([]);
+  const [unified5Day, setUnified5Day] = useState<UnifiedDailyForecastArray>([]);
   const [unifiedHourly, setUnifiedHourly] = useState<UnifiedHourlyForecast>([]);
   const [cityInfo, setCityInfo] = useState<Record<string, unknown> | null>(null);
   const [cityInfoLoading, setCityInfoLoading] = useState(false);
@@ -53,6 +53,10 @@ export default function WeatherDashboard() {
 
   // Add state for temperature unit
   const [tempUnit, setTempUnit] = useState<'C' | 'F'>('C');
+
+  // Add state for forecast tabs
+  const [selectedForecastDays, setSelectedForecastDays] = useState<5 | 10 | 15>(5);
+  const [forecastLoading, setForecastLoading] = useState(false);
 
   // Handle client-side initialization
   useEffect(() => {
@@ -78,38 +82,79 @@ export default function WeatherDashboard() {
     
     setWeatherLoading(true);
     setWeatherError(null);
-    
+    setForecastLoading(true);
+
     try {
-      // Fetch all weather data in parallel for better performance
+      // Use selectedForecastDays or default to 5
+      const days = selectedForecastDays || 5;
+      
+      // Fetch current weather, forecast, and hourly data in parallel
       const [weatherRes, forecastRes, hourlyRes] = await Promise.all([
         fetch(`/api/weather?city=${encodeURIComponent(city)}`),
-        fetch(`/api/forecast?city=${encodeURIComponent(city)}`),
-        fetch(`/api/hourly?city=${encodeURIComponent(city)}`)
+        fetch(`/api/forecast?city=${encodeURIComponent(city)}&days=${days}`),
+        fetch(`/api/hourly?city=${encodeURIComponent(city)}&days=${days}`)
       ]);
-      
-      if (!weatherRes.ok) throw new Error('Failed to fetch weather data');
-      if (!forecastRes.ok) throw new Error('Failed to fetch forecast data');
-      if (!hourlyRes.ok) throw new Error('Failed to fetch hourly data');
-      
-      const [unified, agg5Day, aggHourly] = await Promise.all([
+
+      if (!weatherRes.ok) {
+        throw new Error(`Weather API error: ${weatherRes.status}`);
+      }
+      if (!forecastRes.ok) {
+        throw new Error(`Forecast API error: ${forecastRes.status}`);
+      }
+      if (!hourlyRes.ok) {
+        throw new Error(`Hourly API error: ${hourlyRes.status}`);
+      }
+
+      const [weatherData, forecastData, hourlyData] = await Promise.all([
         weatherRes.json(),
         forecastRes.json(),
         hourlyRes.json()
       ]);
-      
-      setUnifiedWeather(unified);
-      setUnified5Day(agg5Day);
-      setUnifiedHourly(aggHourly);
-    } catch (err) {
-      console.error('Weather fetch error:', err);
-      setWeatherError(err instanceof Error ? err.message : 'Failed to fetch weather data');
-      setUnifiedWeather(null);
-      setUnified5Day([]);
-      setUnifiedHourly([]);
+
+      setUnifiedWeather(weatherData);
+      setUnified5Day(forecastData);
+      setUnifiedHourly(hourlyData);
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      setWeatherError(error instanceof Error ? error.message : 'Failed to fetch weather data');
     } finally {
       setWeatherLoading(false);
+      setForecastLoading(false);
     }
-  }
+  };
+
+  // Function to fetch forecast data with different day ranges
+  const fetchForecastData = async (city: string, days: 5 | 10 | 15) => {
+    setForecastLoading(true);
+    try {
+      // Fetch both forecast and hourly data for the new day range
+      const [forecastRes, hourlyRes] = await Promise.all([
+        fetch(`/api/forecast?city=${encodeURIComponent(city)}&days=${days}`),
+        fetch(`/api/hourly?city=${encodeURIComponent(city)}&days=${days}`)
+      ]);
+
+      if (!forecastRes.ok) {
+        throw new Error(`Forecast API error: ${forecastRes.status}`);
+      }
+      if (!hourlyRes.ok) {
+        throw new Error(`Hourly API error: ${hourlyRes.status}`);
+      }
+
+      const [forecastData, hourlyData] = await Promise.all([
+        forecastRes.json(),
+        hourlyRes.json()
+      ]);
+
+      setUnified5Day(forecastData);
+      setUnifiedHourly(hourlyData);
+      setSelectedForecastDays(days);
+    } catch (error) {
+      console.error('Error fetching forecast data:', error);
+      setWeatherError(error instanceof Error ? error.message : 'Failed to fetch forecast data');
+    } finally {
+      setForecastLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedCity) {
@@ -120,7 +165,7 @@ export default function WeatherDashboard() {
       setUnifiedHourly([]);
       setWeatherError(null);
     }
-  }, [selectedCity])
+  }, [selectedCity, selectedForecastDays])
 
   // Fetch city info when selectedCity changes
   useEffect(() => {
@@ -248,25 +293,36 @@ export default function WeatherDashboard() {
   };
 
   // Helper to get selected day data
-  const fiveDaySummaries = unified5Day;
+  const forecastSummaries = unified5Day;
 
-  // Find today's index in the 5-day forecast
+  // Find today's index in the forecast
   const todayDateStr = new Date().toISOString().slice(0, 10);
-  const todayIndex = fiveDaySummaries.findIndex(day => day.date === todayDateStr) !== -1 ? fiveDaySummaries.findIndex(day => day.date === todayDateStr) : 0;
+  const todayIndex = forecastSummaries.findIndex(day => day.date === todayDateStr) !== -1 ? forecastSummaries.findIndex(day => day.date === todayDateStr) : 0;
 
   // Determine which day to show: if forecast card is open, use selectedDayIndex, else use today
   const effectiveDayIndex = showDetailedForecast ? selectedDayIndex : todayIndex;
-  const selectedDay = fiveDaySummaries[effectiveDayIndex];
+  const selectedDay = forecastSummaries[effectiveDayIndex];
   
   // Get all hourly items for the selected day - fix the date matching logic
   const selectedDayDate = selectedDay ? selectedDay.date : null;
-  const selectedDayHours = selectedDayDate && unifiedHourly.length > 0
-    ? unifiedHourly.filter(item => {
-        // Handle both ISO date format and display time format
-        const itemDate = item.time.split(' ')[0]; // Get just the date part
-        return itemDate === selectedDayDate;
-      })
-    : [];
+  
+  // Process hourly data based on forecast range
+  const selectedDayHours = (() => {
+    if (unifiedHourly.length === 0 || !selectedDayDate) return [];
+    // Normalize selectedDayDate to YYYY-MM-DD
+    const normalizedSelectedDay = selectedDayDate.slice(0, 10);
+    // Always filter to the selected day
+    const filteredData = unifiedHourly.filter(item => {
+      // Normalize item date to YYYY-MM-DD
+      const itemDate = item.time.split('T')[0].split(' ')[0];
+      return itemDate === normalizedSelectedDay;
+    });
+    // For 10/15-day forecasts, downsample to every 2 hours
+    if (selectedForecastDays > 5) {
+      return filteredData.filter((_, idx) => idx % 2 === 0);
+    }
+    return filteredData;
+  })();
   
   // Get the middle hour or first available hour for the selected day
   const selectedHour = selectedDayHours.length > 0 
@@ -459,20 +515,6 @@ export default function WeatherDashboard() {
               </div>
             )}
 
-            {/* Data Sources Indicator */}
-            {isClient && unifiedWeather && !weatherLoading && Object.keys(unifiedWeather.sourceBreakdown).length > 1 && (
-              <div className="text-center text-white/60 text-xs">
-                <div className="font-semibold mb-1">Data Sources:</div>
-                <div className="flex justify-center gap-2">
-                  {Object.keys(unifiedWeather.sourceBreakdown).map(source => (
-                    <span key={source} className="px-2 py-1 bg-white/10 rounded-full capitalize">
-                      {source}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Weather Error State */}
             {weatherError && (
               <div className="text-center text-red-400 mt-8 p-4 bg-red-900/20 rounded-lg">
@@ -577,7 +619,7 @@ export default function WeatherDashboard() {
               {weatherLoading ? (
                 <div className="flex flex-col md:flex-row items-start justify-center min-h-[40vh] w-full gap-8">
                   <WeatherHeroSkeleton />
-                  {showDetailedForecast && <ForecastSkeleton />}
+                  {showDetailedForecast && <ForecastSkeleton days={selectedForecastDays} />}
                   <HourlyChartSkeleton />
                 </div>
               ) : weatherError ? (
@@ -645,7 +687,7 @@ export default function WeatherDashboard() {
                         </div>
                       </div>
                       {/* See Details Button */}
-                      {fiveDaySummaries.length > 0 && (
+                      {forecastSummaries.length > 0 && (
                         <div className="mt-2 flex">
                           <button
                             onClick={() => setShowDetailedForecast(!showDetailedForecast)}
@@ -663,30 +705,89 @@ export default function WeatherDashboard() {
                       )}
                     </div>
                     {/* 5-Day Forecast Glassmorphic Card (right, not floating) */}
-                    {fiveDaySummaries.length > 0 && showDetailedForecast && (
-                      <div className="w-full md:w-[420px] bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-4 flex flex-col items-center justify-start mt-8 md:mt-0">
-                        <h3 className="text-lg font-semibold text-center mb-4 text-white">5-Day Forecast</h3>
+                    {forecastSummaries.length > 0 && showDetailedForecast && (
+                      <div className={`${selectedForecastDays === 5 ? 'w-full md:w-[420px]' : 'w-full md:w-[520px]'} bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-4 flex flex-col items-center justify-start mt-8 md:mt-0`}>
+                        {/* Forecast Tabs */}
+                        <div className="flex items-center justify-center mb-4 w-full">
+                          <div className="flex gap-1">
+                            {([5, 10, 15] as const).map((days) => (
+                              <button
+                                key={days}
+                                onClick={() => selectedCity && fetchForecastData(selectedCity, days)}
+                                disabled={forecastLoading}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                  selectedForecastDays === days
+                                    ? 'bg-white/20 text-white shadow-sm border border-white/30'
+                                    : 'text-gray-300 hover:text-white hover:bg-white/5'
+                                } ${forecastLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                              >
+                                {days} Days
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-semibold text-center mb-4 text-white">
+                          {selectedForecastDays}-Day Forecast
+                          {forecastLoading && <span className="ml-2 text-sm text-gray-300">Loading...</span>}
+                        </h3>
                         <div className="flex flex-col gap-2 w-full">
-                          {fiveDaySummaries.map((day, index) => (
-                            <div
-                              key={day.date}
-                              className={`flex flex-row items-center px-4 py-2 rounded-lg border transition-all duration-200 cursor-pointer w-full min-h-[60px] max-h-[80px] ${
-                                effectiveDayIndex === index
-                                  ? 'bg-white/30 border-orange-400 shadow-lg'
-                                  : 'bg-white/20 border-white/20 hover:bg-orange-50/20'
-                              }`}
-                              onClick={() => setSelectedDayIndex(index)}
-                            >
-                              {/* Icon, Day, and Summary in a single row */}
-                              <div className="flex flex-row items-center w-full">
-                                <span className="w-8 flex justify-center">
-                                  <WeatherIcon condition={day.condition} size="24px" className="text-yellow-400" />
-                                </span>
-                                <span className="w-12 text-xl font-extrabold text-white drop-shadow-lg mr-3 flex-shrink-0">{day.day}</span>
-                                <span className="flex-1 text-xs text-white font-normal leading-tight whitespace-pre-line text-left">{getForecastSummary(day)}</span>
+                          {selectedForecastDays === 5 ? (
+                            // Detailed layout for 5 days
+                            forecastSummaries.map((day, index) => (
+                              <div
+                                key={day.date}
+                                className={`flex flex-row items-center px-4 py-2 rounded-lg border transition-all duration-200 cursor-pointer w-full min-h-[60px] max-h-[80px] ${
+                                  effectiveDayIndex === index
+                                    ? 'bg-white/30 border-orange-400 shadow-lg'
+                                    : 'bg-white/20 border-white/20 hover:bg-orange-50/20'
+                                }`}
+                                onClick={() => setSelectedDayIndex(index)}
+                              >
+                                {/* Icon, Day, and Summary in a single row */}
+                                <div className="flex flex-row items-center w-full">
+                                  <span className="w-8 flex justify-center">
+                                    <WeatherIcon condition={day.condition} size="24px" className="text-yellow-400" />
+                                  </span>
+                                  <span className="w-12 text-xl font-extrabold text-white drop-shadow-lg mr-3 flex-shrink-0">{day.day}</span>
+                                  <span className="flex-1 text-xs text-white font-normal leading-tight whitespace-pre-line text-left">{getForecastSummary(day)}</span>
+                                </div>
                               </div>
+                            ))
+                          ) : (
+                            // Compact grid layout for 10 and 15 days
+                            <div className="grid grid-cols-5 gap-2">
+                              {forecastSummaries.map((day, index) => (
+                                <div
+                                  key={day.date}
+                                  className={`flex flex-col items-center p-2 rounded-lg border transition-all duration-200 cursor-pointer min-h-[80px] ${
+                                    effectiveDayIndex === index
+                                      ? 'bg-white/30 border-orange-400 shadow-lg'
+                                      : 'bg-white/20 border-white/20 hover:bg-orange-50/20'
+                                  }`}
+                                  onClick={() => setSelectedDayIndex(index)}
+                                >
+                                  {/* Day name */}
+                                  <span className="text-xs font-semibold text-white mb-1">{day.day}</span>
+                                  
+                                  {/* Weather icon */}
+                                  <span className="mb-1">
+                                    <WeatherIcon condition={day.condition} size="20px" className="text-yellow-400" />
+                                  </span>
+                                  
+                                  {/* High temperature */}
+                                  <span className="text-sm font-bold text-white">
+                                    {displayTemperature(day.high)}
+                                  </span>
+                                  
+                                  {/* Low temperature */}
+                                  <span className="text-xs text-gray-300">
+                                    {displayTemperature(day.low)}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     )}
@@ -695,9 +796,9 @@ export default function WeatherDashboard() {
                   {/* Hourly Chart */}
                   {selectedDayHours.length > 0 && (
                     <div className="mt-8">
-                      <div className="p-6">
+                      <div className="p-6">                       
                         <ResponsiveContainer width="100%" height={200}>
-                          <LineChart data={selectedDayHours}>
+                          <LineChart data={selectedDayHours.filter(item => item.temp !== undefined)}>
                             <CartesianGrid stroke="transparent" />
                             <XAxis
                               dataKey="time"
@@ -718,6 +819,10 @@ export default function WeatherDashboard() {
                                   }
                                 }
                                 if (date && !isNaN(date.getTime())) {
+                                  // For longer periods, show date and time
+                                  if (selectedForecastDays > 5) {
+                                    return format(date, 'MMM d, h:mm a');
+                                  }
                                   return format(date, 'h:mm a');
                                 }
                                 return value;
@@ -734,11 +839,17 @@ export default function WeatherDashboard() {
                               }}
                               cursor={false}
                               labelFormatter={(value) => {
-                                const date = typeof value === 'string'
-                                  ? parse(value.replace(' ', 'T'), "yyyy-MM-dd'T'HH:mm:ss", new Date())
-                                  : new Date(value);
+                                let date;
+                                if (typeof value === 'string') {
+                                  // Support both 'YYYY-MM-DDTHH:mm' and 'YYYY-MM-DD HH:mm:ss'
+                                  date = value.includes('T')
+                                    ? new Date(value)
+                                    : new Date(value.replace(' ', 'T'));
+                                } else {
+                                  date = new Date(value);
+                                }
                                 if (!isNaN(date.getTime())) {
-                                  return format(date, 'h:mm a');
+                                  return format(date, 'MMM d, h:mm a');
                                 }
                                 return value;
                               }}
@@ -755,7 +866,7 @@ export default function WeatherDashboard() {
                               dataKey="temp" 
                               stroke="#f97316" 
                               strokeWidth={3}
-                              dot={{ fill: '#f97316', strokeWidth: 2, r: 4 }}
+                              dot={{ fill: '#f97316', strokeWidth: 3, r: 0 }}
                               activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 0.5 }}
                             />
                           </LineChart>
