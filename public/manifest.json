@@ -1,0 +1,69 @@
+{
+  "name": "Weather Buddy - Real-time Weather Dashboard",
+  "short_name": "Weather Buddy",
+  "description": "Get accurate real-time weather forecasts, air quality data, and detailed city information. Features 5-day forecasts, hourly predictions, and comprehensive weather insights for any location worldwide.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["weather", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/weather/sunny.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Weather Dashboard - Desktop View"
+    },
+    {
+      "src": "/weather/cloudy.jpg",
+      "sizes": "750x1334",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Weather Dashboard - Mobile View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Current Weather",
+      "short_name": "Weather",
+      "description": "View current weather conditions",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/weather/sunny.jpg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+} 
