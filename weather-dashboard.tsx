@@ -15,17 +15,10 @@ import { Badge } from "@/components/ui/badge"
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, CartesianGrid } from 'recharts'
 import { WeatherIcon, WeatherBuddyIcon, SearchIcon, WindIcon, WikipediaIcon, getPollutantIcon } from "@/components/ui/weathericon"
 import { ArrowDownLeft, ArrowUpRight } from 'iconoir-react'
-import { 
-  WeatherHeroSkeleton, 
-  ForecastSkeleton, 
-  HourlyChartSkeleton, 
-  CityInfoSkeleton, 
-  AQISkeleton, 
-  SearchSkeleton
-} from "@/components/ui/weather-skeletons"
 import Image from "next/image"
 import { format, parse } from "date-fns"
 import TopCities from './components/TopCities'
+import WeatherLoaderOverlay from "@/components/ui/WeatherLoaderOverlay"
 
 export default function WeatherDashboard() {
   // Load selectedCity from localStorage on mount
@@ -57,6 +50,9 @@ export default function WeatherDashboard() {
   // Add state for forecast tabs
   const [selectedForecastDays, setSelectedForecastDays] = useState<5 | 10 | 15>(5);
   const [forecastLoading, setForecastLoading] = useState(false);
+
+  // Determine if any loading state is active
+  const isLoading = weatherLoading || aqiLoading || cityInfoLoading || forecastLoading;
 
   // Handle client-side initialization
   useEffect(() => {
@@ -351,59 +347,62 @@ export default function WeatherDashboard() {
     return weather.windSpeed;
   };
 
-  // Helper function to get condition from either data type
+  // Helper: Map OpenMeteo weather codes to icon/condition
+  function mapWeatherCodeToCondition(code: number): string {
+    if (code === 0) return 'sun-light';
+    if ([1, 2, 3].includes(code)) return 'cloud-sunny';
+    if ([45, 48].includes(code)) return 'fog';
+    if ([51, 53, 55, 56, 57, 61, 63].includes(code)) return 'rain';
+    if ([65, 66, 67, 80, 81, 82].includes(code)) return 'heavy-rain';
+    if ([71, 73, 75, 85, 86].includes(code)) return 'snow';
+    if (code === 77) return 'snow-flake';
+    if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
+    return 'cloud'; // fallback to cloud if unknown
+  }
+
+  // Type guard to check if object is UnifiedWeatherData with OpenMeteo code
+  function hasOpenMeteoCode(weather: UnifiedWeatherData | UnifiedHourlyForecastItem | null): weather is UnifiedWeatherData {
+    return !!weather &&
+      typeof weather === 'object' &&
+      'sourceBreakdown' in weather &&
+      weather.sourceBreakdown !== undefined &&
+      typeof weather.sourceBreakdown === 'object' &&
+      'openmeteo' in weather.sourceBreakdown &&
+      weather.sourceBreakdown.openmeteo !== undefined &&
+      typeof weather.sourceBreakdown.openmeteo === 'object' &&
+      'weather_code' in (weather.sourceBreakdown.openmeteo as { weather_code?: number }) &&
+      typeof (weather.sourceBreakdown.openmeteo as { weather_code?: number }).weather_code === 'number';
+  }
+
+  // Helper function to get condition from either data type, prioritizing weather_code
   const getCondition = (weather: UnifiedWeatherData | UnifiedHourlyForecastItem | null) => {
     if (!weather) return 'default';
-    
-    const condition = weather.condition;
-    const description = 'description' in weather && typeof (weather as { description: string }).description === 'string' 
-      ? (weather as { description: string }).description 
+
+    // 1. Use OpenMeteo weather_code if available
+    if (hasOpenMeteoCode(weather)) {
+      const openmeteo = weather.sourceBreakdown.openmeteo as { weather_code: number };
+      return mapWeatherCodeToCondition(openmeteo.weather_code);
+    }
+
+    // 2. Fallback to string matching (improved)
+    const condition = (weather.condition || '').toLowerCase();
+    const description = ('description' in weather && typeof weather.description === 'string')
+      ? weather.description.toLowerCase()
       : '';
-    
-    // If we have a description, use it for better condition detection
-    if (description && description.trim() !== '') {
-      const desc = description.toLowerCase();
-      
-      // Check for rain conditions in description
-      if (desc.includes('rain') || desc.includes('drizzle') || desc.includes('shower')) {
-        return 'rainy';
-      }
-      
-      // Check for storm conditions in description
-      if (desc.includes('storm') || desc.includes('thunder') || desc.includes('lightning')) {
-        return 'storm';
-      }
-      
-      // Check for snow conditions in description
-      if (desc.includes('snow') || desc.includes('sleet') || desc.includes('blizzard')) {
-        return 'snowy';
-      }
-      
-      // Check for fog/mist conditions in description
-      if (desc.includes('fog') || desc.includes('mist') || desc.includes('haze')) {
-        return 'fog';
-      }
-      
-      // Check for wind conditions in description
-      if (desc.includes('wind') || desc.includes('breeze') || desc.includes('gust')) {
-        return 'windy';
-      }
-    }
-    
-    // Fall back to the main condition, but normalize it to lowercase
-    if (condition && condition.trim() !== '') {
-      const normalized = condition.toLowerCase();
-      // Map common conditions to video-friendly names
-      if (normalized === 'rain') return 'rainy';
-      if (normalized === 'storm') return 'storm';
-      if (normalized === 'snow') return 'snowy';
-      if (normalized === 'wind') return 'windy';
-      if (normalized === 'clear') return 'sunny';
-      if (normalized === 'clouds' || normalized === 'cloudy') return 'cloudy';
-      return normalized;
-    }
-    
-    return 'default';
+
+    if (condition.includes('thunder') || description.includes('thunder')) return 'thunderstorm';
+    if (condition.includes('hail') || description.includes('hail')) return 'hail';
+    if (
+      condition.includes('rain') || condition.includes('shower') || condition.includes('drizzle') ||
+      description.includes('rain') || description.includes('shower') || description.includes('drizzle')
+    ) return 'rainy';
+    if (condition.includes('snow') || description.includes('snow') || description.includes('sleet') || description.includes('blizzard')) return 'snowy';
+    if (condition.includes('fog') || description.includes('fog') || description.includes('mist') || description.includes('haze')) return 'fog';
+    if (condition.includes('wind') || description.includes('wind') || description.includes('breeze') || description.includes('gust')) return 'windy';
+    if (condition.includes('cloud') || description.includes('cloud')) return 'cloudy';
+    if (condition.includes('clear') || condition.includes('sunny') || description.includes('clear') || description.includes('sunny')) return 'sunny';
+
+    return condition || 'default';
   };
 
   // When closing the forecast card, reset selectedDayIndex to today
@@ -414,12 +413,12 @@ export default function WeatherDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDetailedForecast, todayIndex]);
 
-  // Determine weather condition for video background - use same logic as displayWeather
-  let weatherCondition = "default";
-  if (displayWeather) {
-    const mainCondition = getCondition(displayWeather);
-    weatherCondition = mainCondition && mainCondition.trim() !== '' ? mainCondition : 'default';
-  }
+  // Before rendering, determine the icon condition for the hero content
+  const heroIconCondition = showDetailedForecast && selectedDay
+    ? getForecastDayIcon(selectedDay)
+    : getCondition(displayWeather);
+  // Use heroIconCondition for the background image
+  const bgImage = getWeatherBackground(heroIconCondition);
 
   // Helper to convert temperature
   function displayTemperature(tempC: number | undefined) {
@@ -445,7 +444,30 @@ export default function WeatherDashboard() {
     return parts.join(' ');
   }
 
-  const bgImage = getWeatherBackground(weatherCondition);
+  // Add a helper to get the mapped icon for UnifiedDailyForecast
+  function getForecastDayIcon(day: import("@/lib/types").UnifiedDailyForecast): string {
+    // Try to use OpenMeteo weather_code if available
+    const openmeteo = day?.sourceBreakdown?.openmeteo as { weather_code?: number } | undefined;
+    if (openmeteo && typeof openmeteo.weather_code === 'number') {
+      return mapWeatherCodeToCondition(openmeteo.weather_code);
+    }
+    // Fallback to string matching
+    const condition = (day.condition || '').toLowerCase();
+    const description = (day.description || '').toLowerCase();
+    if (condition.includes('thunder') || description.includes('thunder')) return 'thunderstorm';
+    if (condition.includes('hail') || description.includes('hail')) return 'hail';
+    if (
+      condition.includes('rain') || condition.includes('shower') || condition.includes('drizzle') ||
+      description.includes('rain') || description.includes('shower') || description.includes('drizzle')
+    ) return 'rain';
+    if (condition.includes('snow') || description.includes('snow') || description.includes('sleet') || description.includes('blizzard')) return 'snow';
+    if (condition.includes('fog') || description.includes('fog') || description.includes('mist') || description.includes('haze')) return 'fog';
+    if (condition.includes('wind') || description.includes('wind') || description.includes('breeze') || description.includes('gust')) return 'wind';
+    if (condition.includes('cloud') || description.includes('cloud')) return 'cloud-sunny';
+    if (condition.includes('clear') || condition.includes('sunny') || description.includes('clear') || description.includes('sunny')) return 'sun-light';
+    return 'cloud';
+  }
+
   return (
     <div
       className="relative w-full h-full min-h-screen"
@@ -456,6 +478,8 @@ export default function WeatherDashboard() {
         backgroundRepeat: 'no-repeat',
       }}
     >
+      {/* Loader Overlay */}
+      {isLoading && <WeatherLoaderOverlay />}
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none" />
       {/* Main App Content with minimal rounded corners */}
@@ -483,9 +507,7 @@ export default function WeatherDashboard() {
           {/* Left Sidebar */}
           <div className="w-96 p-6 pb-8 space-y-6 bg-white/5 backdrop-blur-sm shadow-xl rounded-r-2xl h-full">
             {/* Search */}
-            {weatherLoading ? (
-              <SearchSkeleton />
-            ) : (
+            {isLoading ? null : (
               <form onSubmit={handleSearch} className="relative flex items-center gap-2">
                 <SearchIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -509,14 +531,14 @@ export default function WeatherDashboard() {
             )}
 
             {/* Current City Display */}
-            {isClient && selectedCity && !weatherLoading && (
+            {isClient && selectedCity && !isLoading && (
               <div className="text-center text-white/80 text-sm">
                 <span className="font-semibold">Current Location:</span> {selectedCity}
               </div>
             )}
 
             {/* Weather Error State */}
-            {weatherError && (
+            {weatherError && !isLoading && (
               <div className="text-center text-red-400 mt-8 p-4 bg-red-900/20 rounded-lg">
                 <div className="font-semibold mb-1">Weather Error</div>
                 <div className="text-sm">{weatherError}</div>
@@ -524,9 +546,7 @@ export default function WeatherDashboard() {
             )}
 
             {/* AQI Result - Moved to top */}
-            {aqiLoading ? (
-              <AQISkeleton />
-            ) : aqiError ? (
+            {aqiLoading || isLoading ? null : aqiError ? (
               <div className="text-center text-red-400 mt-8 p-3 bg-red-900/20 rounded-lg">
                 <div className="text-sm font-semibold mb-1">Air Quality Unavailable</div>
                 <div className="text-xs">{aqiError}</div>
@@ -558,9 +578,7 @@ export default function WeatherDashboard() {
             ) : null}
 
             {/* City Info Result - Moved to bottom */}
-            {cityInfoLoading ? (
-              <CityInfoSkeleton />
-            ) : cityInfoError ? (
+            {cityInfoLoading || isLoading ? null : cityInfoError ? (
               <div className="text-center text-red-400 mt-8 text-sm">{cityInfoError}</div>
             ) : cityInfo && !cityInfoError && (
               <div className="mt-8 space-y-4">
@@ -616,13 +634,7 @@ export default function WeatherDashboard() {
 
             {/* Weather Details */}
             <div className="p-6">
-              {weatherLoading ? (
-                <div className="flex flex-col md:flex-row items-start justify-center min-h-[40vh] w-full gap-8">
-                  <WeatherHeroSkeleton />
-                  {showDetailedForecast && <ForecastSkeleton days={selectedForecastDays} />}
-                  <HourlyChartSkeleton />
-                </div>
-              ) : weatherError ? (
+              {isLoading ? null : weatherError ? (
                 <div className="flex items-center justify-center h-[60vh] w-full">
                   <div className="text-center max-w-md">
                     <div className="text-2xl text-red-400 mb-4">Weather Error</div>
@@ -643,9 +655,9 @@ export default function WeatherDashboard() {
                     <div className="flex-1 min-w-[250px] min-h-[480px] flex flex-col items-start text-left gap-2">
                       {/* 1. Condition Text */}
                       <span className="flex items-center gap-2 text-4xl md:text-5xl font-bold text-white drop-shadow-lg">
-                            {getCondition(displayWeather)}
+                            {heroIconCondition}
                             <WeatherIcon
-                              condition={getCondition(displayWeather)}
+                              condition={heroIconCondition}
                               size="48px"
                               className="text-white"
                             />
@@ -679,7 +691,7 @@ export default function WeatherDashboard() {
                       <div className="mt-4">
                         <div className="text-2xl text-white font-semibold" style={{ fontFamily: 'Caveat, cursive' }}>
                           {getWeatherAdvice({
-                            main: getCondition(displayWeather),
+                            main: heroIconCondition,
                             temp_max: selectedDay ? selectedDay.high : (getTemperature(displayWeather) || 0),
                             humidity: getHumidity(displayWeather) || 0,
                             wind: getWindSpeed(displayWeather) || 0
@@ -727,10 +739,6 @@ export default function WeatherDashboard() {
                           </div>
                         </div>
                         
-                        <h3 className="text-lg font-semibold text-center mb-4 text-white">
-                          {selectedForecastDays}-Day Forecast
-                          {forecastLoading && <span className="ml-2 text-sm text-gray-300">Loading...</span>}
-                        </h3>
                         <div className="flex flex-col gap-2 w-full">
                           {selectedForecastDays === 5 ? (
                             // Detailed layout for 5 days
@@ -747,7 +755,7 @@ export default function WeatherDashboard() {
                                 {/* Icon, Day, and Summary in a single row */}
                                 <div className="flex flex-row items-center w-full">
                                   <span className="w-8 flex justify-center">
-                                    <WeatherIcon condition={day.condition} size="24px" className="text-yellow-400" />
+                                    <WeatherIcon condition={getForecastDayIcon(day)} size="24px" className="text-yellow-400" />
                                   </span>
                                   <span className="w-12 text-xl font-extrabold text-white drop-shadow-lg mr-3 flex-shrink-0">{day.day}</span>
                                   <span className="flex-1 text-xs text-white font-normal leading-tight whitespace-pre-line text-left">{getForecastSummary(day)}</span>
@@ -772,7 +780,7 @@ export default function WeatherDashboard() {
                                   
                                   {/* Weather icon */}
                                   <span className="mb-1">
-                                    <WeatherIcon condition={day.condition} size="20px" className="text-yellow-400" />
+                                    <WeatherIcon condition={getForecastDayIcon(day)} size="20px" className="text-yellow-400" />
                                   </span>
                                   
                                   {/* High temperature */}
